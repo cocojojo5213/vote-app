@@ -11,7 +11,8 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h1>推薦結果一覧</h1>
             <div>
-                <button id="exportBtn" class="btn btn-success">エクセルにエクスポート</button>
+                <!-- 修正：将复杂的JS按钮改回简单的下载链接 -->
+                <a href="{{ url_for('export') }}" class="btn btn-success">エクセルにエクスポート</a>
                 <a href="{{ url_for('logout') }}" class="btn btn-secondary ms-2">ログアウト</a>
             </div>
         </div>
@@ -24,36 +25,72 @@
             {% endif %}
         {% endwith %}
 
-        <!-- ... (图表和表格部分无变化) ... -->
+        <!-- 图表显示区域 -->
         <div class="card mb-4">
-            <div class="card-header">投票結果グラフ</div>
-            <div class="card-body"><canvas id="voteChart"></canvas></div>
+            <div class="card-header">
+                投票結果グラフ
+            </div>
+            <div class="card-body">
+                <canvas id="voteChart"></canvas>
+            </div>
         </div>
+
+        <!-- 排名列表显示区域 -->
         <div class="card mb-4">
-            <div class="card-header">投票数ランキング</div>
+            <div class="card-header">
+                投票数ランキング
+            </div>
             <div class="card-body">
                 <table class="table table-striped">
-                    <thead><tr><th>順位</th><th>推薦された方</th><th>票数</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>順位</th>
+                            <th>推薦された方</th>
+                            <th>票数</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         {% for row in vote_counts %}
-                        <tr><td>{{ loop.index }}</td><td>{{ row['nominee_name'] }}</td><td>{{ row['vote_count'] }}</td></tr>
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ row['nominee_name'] }}</td>
+                            <td>{{ row['vote_count'] }}</td>
+                        </tr>
                         {% else %}
-                        <tr><td colspan="3" class="text-center">まだ推薦記録はありません</td></tr>
+                        <tr>
+                            <td colspan="3" class="text-center">まだ推薦記録はありません</td>
+                        </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
         </div>
+
+        <!-- 详细理由列表区域 -->
         <div class="card">
-            <div class="card-header">推薦理由一覧</div>
+            <div class="card-header">
+                推薦理由一覧
+            </div>
             <div class="card-body">
                 <table class="table table-bordered">
-                    <thead><tr><th>推薦された方</th><th>推薦理由</th><th>推薦日時</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>推薦された方</th>
+                            <th>推薦理由</th>
+                            <th>推薦日時</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         {% for nomination in all_nominations %}
-                        <tr><td>{{ nomination['nominee_name'] }}</td><td>{{ nomination['comment_text'] }}</td><td>{{ nomination['timestamp'] }}</td></tr>
+                        <tr>
+                            <td>{{ nomination['nominee_name'] }}</td>
+                            <td>{{ nomination['comment_text'] }}</td>
+                            <td>{{ nomination['timestamp'] }}</td>
+                        </tr>
                         {% else %}
-                        <tr><td colspan="3" class="text-center">まだ推薦記録はありません</td></tr>
+                        <tr>
+                            <td colspan="3" class="text-center">まだ推薦記録はありません</td>
+                        </tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -62,34 +99,39 @@
         </div>
     </div>
 
+    <!-- 图表渲染的JS代码 (无变化) -->
     <script>
-        // Chart.js 的代码 (无变化)
         const ctx = document.getElementById('voteChart').getContext('2d');
         const labels = {{ labels|tojson }};
         const data = {{ data|tojson }};
-        new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ label: '票数', data: data, backgroundColor: 'rgba(54, 162, 235, 0.6)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1 }] }, options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, responsive: true, plugins: { legend: { display: false } } } });
 
-        // 修改：使用pywebview的API来处理导出
-        document.getElementById('exportBtn').addEventListener('click', async function() {
-            const btn = this;
-            btn.textContent = '作成中...';
-            btn.disabled = true;
-
-            try {
-                // 调用注入到JS环境中的Python函数
-                // pywebview.api 对象是自动可用的
-                const result = await window.pywebview.api.save_excel_file();
-                
-                // 显示Python函数返回的结果消息
-                alert(result.message);
-
-            } catch (e) {
-                console.error('Export failed:', e);
-                alert('エクスポート処理中に予期せぬエラーが発生しました。');
-            } finally {
-                // 无论成功失败，都恢复按钮状态
-                btn.textContent = 'エクセルにエクスポート';
-                btn.disabled = false;
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '票数',
+                    data: data,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
             }
         });
     </script>
