@@ -21,8 +21,9 @@ def get_db_path():
     在Render上，我们会使用一个叫做“持久化磁盘”的功能来永久保存数据。
     这个磁盘会被挂载到 /var/render/data 目录。
     """
-    # RENDER_DATA_DIR 是Render平台会自动设置的环境变量
     data_dir = os.environ.get('RENDER_DATA_DIR', os.path.dirname(os.path.abspath(__file__)))
+    # 确保这个目录存在
+    os.makedirs(data_dir, exist_ok=True)
     return os.path.join(data_dir, 'vote.db')
 
 # --- 数据库连接管理 (中文注释) ---
@@ -46,7 +47,6 @@ def index():
 
 @app.route('/nominate', methods=['POST'])
 def nominate():
-    # 使用 session 来跟踪每个用户的提交次数
     if 'submission_count' not in session:
         session['submission_count'] = 0
 
@@ -166,11 +166,11 @@ def init_db():
     conn.close()
     logging.info("Database initialized.")
 
-# --- 启动逻辑 ---
-# 当在Render上运行时，Render会使用 "Start Command" 来启动应用，
-# 而不会直接运行这个 if __name__ == '__main__': 部分。
-# 这部分主要用于您在自己电脑上进行本地测试。
-if __name__ == '__main__':
+# --- 修正：在应用启动前，确保数据库被初始化 ---
+# 这段代码会在Gunicorn加载应用时执行
+with app.app_context():
     init_db()
-    # 监听所有网络接口
+
+# 这部分仅用于本地测试，在Render上不会被执行
+if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
